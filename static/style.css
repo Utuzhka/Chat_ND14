@@ -16,6 +16,18 @@ header {
     background-color: rgb(255, 201, 239);
     padding: 0.3rem;
     color: rgb(160, 32, 45);
+    position: relative;
+}
+
+header button{
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    border: none;
+    padding: 0.5rem;
+    background-color: rgb(218, 128, 162);
+    border-radius: 50%;
+    color: white;
 }
 
 main {
