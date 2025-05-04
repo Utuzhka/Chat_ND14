@@ -71,3 +71,35 @@ main {
     padding: 0 1rem;
     font-size: 1.2rem;
 }
+
+.auth{
+    justify-content: center;
+    align-items: center;
+}
+
+form{
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(255, 219, 246, 0.585);
+    color: rgb(101, 20, 48);
+    padding: 1rem;
+    border-radius: 1rem;
+}
+
+form label {
+    margin-top: 0.5rem;
+}
+
+form input {
+    padding: 0.3rem;
+}
+
+form button {
+    margin-top: 1rem;
+    background-color: rgb(193, 88, 181);
+    padding: 0.3rem;
+    border-radius: 0.5rem;
+    color: white;
+    border: none;
+    padding: 0.5rem;
+}

@@ -14,11 +14,25 @@ let style = fs.readFileSync(pathToStyle, "utf-8")
 let pathToScript = path.join(__dirname, "static", "script.js")
 let script = fs.readFileSync(pathToScript, "utf-8")
 
+let pathToAuth = path.join(__dirname, "static", "auth.js")
+let auth = fs.readFileSync(pathToAuth, "utf-8")
+
+let pathToRegister = path.join(__dirname, "static", "register.html")
+let register = fs.readFileSync(pathToRegister, "utf-8")
+
 let server = http.createServer(function (req, res) {
     switch (req.url) {
         case "/":
             res.writeHead(200, { "content-type": "text/html" })
             res.end(index)
+            break;
+        case "/register":
+            res.writeHead(200, { "content-type": "text/html" })
+            res.end(register)
+            break;
+        case "/auth.js":
+            res.writeHead(200, { "content-type": "text/js" })
+            res.end(auth)
             break;
         case "/style.css":
             res.writeHead(200, { "content-type": "text/css" })
@@ -27,6 +41,18 @@ let server = http.createServer(function (req, res) {
         case "/script.js":
             res.writeHead(200, { "content-type": "text/js" })
             res.end(script)
+            break;
+        case "/api/register":
+            let data = ""
+            req.on("data", (chunk)=> data += chunk)
+            req.on("end", async ()=>{
+                data = JSON.parse(data)
+                console.log(data)
+                if(await db.existsUser(data.login)){
+                    res.end(JSON.stringify({status: "User exist"}))
+                }
+                res.end()
+            })
             break;
         default:
             res.writeHead(404, { "content-type": "text/html" })
@@ -57,5 +83,4 @@ io.on("connection", async (s)=>{
         io.emit("update", JSON.stringify(chat))
     })
 });
-
 
