@@ -4,6 +4,8 @@ let http = require("http")
 let path = require("path")
 let fs = require("fs")
 let socket = require("socket.io")
+let jwt = require("jsonwebtoken")
+let bcrypt = require("bcrypt")
 
 let pathToIndex = path.join(__dirname, "static", "index.html")
 let index = fs.readFileSync(pathToIndex, "utf-8")
@@ -20,6 +22,9 @@ let auth = fs.readFileSync(pathToAuth, "utf-8")
 let pathToRegister = path.join(__dirname, "static", "register.html")
 let register = fs.readFileSync(pathToRegister, "utf-8")
 
+let pathToLoginPage = path.join(__dirname, "static", "login.html");
+let loginPage = fs.readFileSync(pathToLoginPage, "utf-8");
+
 let server = http.createServer(function (req, res) {
     switch (req.url) {
         case "/":
@@ -29,6 +34,10 @@ let server = http.createServer(function (req, res) {
         case "/register":
             res.writeHead(200, { "content-type": "text/html" })
             res.end(register)
+            break;
+        case "/login":
+            res.writeHead(200, { "content-type": "text/html" });
+            res.end(loginPage);
             break;
         case "/auth.js":
             res.writeHead(200, { "content-type": "text/js" })
@@ -44,14 +53,41 @@ let server = http.createServer(function (req, res) {
             break;
         case "/api/register":
             let data = ""
-            req.on("data", (chunk)=> data += chunk)
-            req.on("end", async ()=>{
+            req.on("data", (chunk) => data += chunk)
+            req.on("end", async () => {
                 data = JSON.parse(data)
                 console.log(data)
-                if(await db.existsUser(data.login)){
-                    res.end(JSON.stringify({status: "User exist"}))
+                if (await db.existsUser(data.login)) {
+                    res.end(JSON.stringify({ status: "User exist" }))
+                    return
                 }
-                res.end()
+                let hash = await bcrypt.hash(data.password, 10)
+                console.log(data.password, hash)
+                await db.addUser(data.login, hash).catch(err=>console.log(err))
+                res.end(JSON.stringify({ status: "ok" }))
+            })
+            break;
+        case "/api/login":
+            let datalogin = ""
+            req.on("data", (chunk) => datalogin += chunk)
+            req.on("end", async () => {
+                datalogin = JSON.parse(datalogin)
+                let user = await db.getUser(datalogin.login)
+                if(user.length == 0){
+                    res.writeHead(400)
+                    res.end(JSON.stringify({status: "wrong password or login"}))
+                    return;
+                }
+                user = user[0]
+                if(await bcrypt.compare(datalogin.password, user.password)){
+                    let token = jwt.sign({login: user.login, id: user.id}, "zefir", {expiresIn: "1h"} )
+                    
+                    res.end(JSON.stringify({ status: "ok", token, logi: user.login, id: user.id }))
+                }else{
+                    res.writeHead(400)
+                    res.end(JSON.stringify({status: "wrong password or login"}))
+                    return;
+                }
             })
             break;
         default:
@@ -64,21 +100,21 @@ let io = new socket.Server(server);
 
 let chat = []
 
-io.on("connection", async (s)=>{
+io.on("connection", async (s) => {
     console.log("User id: " + s.id)
     let messages = await db.getMessages()
     console.log(messages)
-    let chat = messages.map(m=>({user: m.login, message: m.content}))
+    let chat = messages.map(m => ({ user: m.login, message: m.content }))
     io.emit("update", JSON.stringify(chat))
-    s.on("message", async (data)=>{
+    s.on("message", async (data) => {
         let message = JSON.parse(data)
         let text = message.message
 
-        await db.addMessage (text, 1).catch(err=>console.log(err))
+        await db.addMessage(text, 1).catch(err => console.log(err))
 
         let messages = await db.getMessages()
         console.log(messages)
-        let chat = messages.map(m=>({user: m.login, message: m.content}))
+        let chat = messages.map(m => ({ user: m.login, message: m.content }))
 
         io.emit("update", JSON.stringify(chat))
     })

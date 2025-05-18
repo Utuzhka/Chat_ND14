@@ -51,10 +51,19 @@ async function existsUser(login){
     }
 }
 
-async function addUser(login){
+async function addUser(login, password){
     try{
     let [users, fields] = await adb.query("INSERT INTO User(login, password) VALUES (?,?)", [login, password])
     return users
+    }catch(err){
+        throw err.message
+    }
+}
+
+async function getUser(login){
+    try{
+        let [users, fields] = await adb.query("SELECT * FROM User WHERE login = ?", [login])
+        return users
     }catch(err){
         throw err.message
     }
@@ -65,5 +74,6 @@ module.exports = {
     getMessages,
     addMessage,
     existsUser,
-    addUser
+    addUser,
+    getUser
 }
